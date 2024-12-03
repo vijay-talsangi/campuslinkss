@@ -16,6 +16,14 @@ $stmt->bind_param("ssss", $username, $friend, $friend, $username);
 $stmt->execute();
 $result = $stmt->get_result();
 
+$update_notification_sql = "UPDATE notifications 
+                             SET seen = 1 
+                             WHERE receiver = ? AND sender = ? AND seen = 0";
+$update_stmt = $conn->prepare($update_notification_sql);
+$update_stmt->bind_param("ss", $username, $friend);
+$update_stmt->execute();
+
+
 while ($row = $result->fetch_assoc()) {
     $sender = htmlspecialchars($row['sender']);
     $message = htmlspecialchars($row['message']);

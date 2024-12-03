@@ -87,6 +87,7 @@ $update_stmt->execute();
 <div class="chat-container">
     <div class="chat-header">
         Chat with <?php echo $friend; ?>
+        <button id="delete-chat" class="btn btn-danger btn-sm float-end">Clear Chat</button>
     </div>
     <div id="chat-messages" class="chat-messages">
         <!-- Messages will be loaded here -->
@@ -95,6 +96,7 @@ $update_stmt->execute();
         <input type="text" id="message" placeholder="Type a message">
         <button id="send-button">Send</button>
     </div>
+    
 </div>
 
 <script>
@@ -149,6 +151,25 @@ $update_stmt->execute();
 
         // Auto-refresh messages every 2 seconds
         setInterval(loadMessages, 2000);
+
+        $("#delete-chat").click(function () {
+        if (confirm("Are you sure you want to delete this chat?")) {
+            $.ajax({
+                url: "delete_chat.php",
+                type: "POST",
+                data: { friend: "<?php echo $friend; ?>" },
+                success: function (response) {
+                    const data = JSON.parse(response);
+                    if (data.success) {
+                        alert("Chat deleted successfully!");
+                        loadMessages(); // Reload the chat (it should be empty)
+                    } else {
+                        alert("Failed to delete chat: " + data.error);
+                    }
+                }
+            });
+        }
+    });
     });
 </script>
 </body>

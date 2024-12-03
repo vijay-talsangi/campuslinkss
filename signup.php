@@ -87,7 +87,7 @@
         <div id="emailHelp" class="form-text">Type same password as above.</div>
       </div>
       <p>Already registered? <a href="/campuslinkss/login.php" style="text-decoration-color: rgb(91, 206, 91); color: rgb(91, 206, 91);">Login</a></p>
-      <button type="submit" class="btn btn-primary">Signup</button>
+      <button type="submit" class="btn btn-primary mb-2">Signup</button>
 
     </form>
   </div>

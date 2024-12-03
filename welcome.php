@@ -24,7 +24,6 @@ include 'partials/_lnav.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_friend'])) {
     $friend_username = $_POST['friend_username'];
 
-    // Delete friendship from the database
     $remove_sql = "DELETE FROM friends 
                    WHERE (user1 = ? AND user2 = ?) 
                       OR (user1 = ? AND user2 = ?)";
@@ -73,16 +72,14 @@ if ($result->num_rows > 0) {
         $notification_row = $notification_result->fetch_assoc();
         $unread_count = $notification_row['unread_count'];
 
-        // Display friend's profile card with notifications
         echo '<div class="col-md-3 mb-4">
                 <div class="card">
                     <div class="card-body text-center">
                         <img src="./person.jpg" class="card-img-top" alt="person">
                         <h5 class="card-title">' . $friend_username . '</h5>';
         
-        // If there are unread messages, display a notification
         if ($unread_count > 0) {
-            echo '<span class="badge bg-danger mb-2">' . $unread_count . ' new message(s)</span><br>';
+            echo '<span class="badge bg-danger mb-2 notification-badge" data-friend="' . $friend_username . '">' . $unread_count . ' new message(s)</span><br>';
         }
 
         echo '      <a href="chat.php?user=' . $friend_username . '" class="btn btn-primary">Chat</a>
@@ -100,6 +97,43 @@ if ($result->num_rows > 0) {
 
 echo '  </div>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+    function fetchNotifications() {
+        $(".notification-badge").each(function () {
+            const friendUsername = $(this).data("friend");
+            const badge = $(this);
+
+            $.ajax({
+                url: "fetch_notifications.php",
+                type: "GET",
+                data: { friend: friendUsername },
+                success: function (response) {
+                    if (response.error) {
+                        console.error("Error fetching notifications:", response.error);
+                        badge.hide();
+                    } else if (response.unread_count > 0) {
+                        badge.text(response.unread_count);
+                        badge.show();
+                    } else {
+                        badge.hide();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX error:", error);
+                }
+            });
+        });
+    }
+
+    // Fetch notifications periodically
+    fetchNotifications();
+    setInterval(fetchNotifications, 1000);
+});
+
+</script>
+
 </body>
 </html>';
 ?>

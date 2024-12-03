@@ -18,5 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $sender, $receiver);
     $stmt->execute();
+
+    $sql_notification = "INSERT INTO notifications (sender, receiver, message, seen) 
+                     VALUES (?, ?, ?, 0)";
+    $stmt_notification = $conn->prepare($sql_notification);
+    $stmt_notification->bind_param("sss", $sender, $receiver, $message);
+    $stmt_notification->execute();
 }
 ?>
