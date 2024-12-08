@@ -63,13 +63,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $mail->isSMTP();
                     $mail->Host = 'smtp.gmail.com'; // SMTP server
                     $mail->SMTPAuth = true;
-                    $mail->Username = 'vijay.talsangi@mitwpu.edu.in'; // Your Gmail address
-                    $mail->Password = 'vjoh xesl sdhm savz'; // Your Gmail app password
+
+                    
                     $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port = 587; // SMTP port for TLS
 
                     // Recipients
-                    $mail->setFrom('vijay.talsangi@mitwpu.edu.in', 'Vijay');
+                    
                     $mail->addAddress($email); // Recipient's email
 
                     // Content
