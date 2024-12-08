@@ -1,45 +1,99 @@
 <?php
-  $showalert = false;
-  $showerror = false;
-  if($_SERVER["REQUEST_METHOD"] == "POST"){
-    $err = "";
+// Include PHPMailer files
+require 'phpmailer/src/PHPMailer.php';
+require 'phpmailer/src/SMTP.php';
+require 'phpmailer/src/Exception.php';
+
+$showalert = false;
+$showerror = false;
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     include 'partials/_dbconnect.php';
+
     $email = $_POST["email"];
     $username = $_POST["username"];
     $password = $_POST["password"];
     $cpassword = $_POST["cpassword"];
-    
+
+    // Validate email domain
     if (substr($email, -14) !== "@mitwpu.edu.in") {
-      $showerror = "email must end with '@mitwpu.edu.in'.";
-    }elseif(empty($username)){
-      $showerror = "Username is must";
+        $showerror = "Email must end with '@mitwpu.edu.in'.";
+    } elseif (empty($username)) {
+        $showerror = "Username is required.";
     } else {
-      
-      $sql_check = "SELECT * FROM `users` WHERE `email` = '$email'";
-      $result_check = mysqli_query($conn, $sql_check);
-      $numExistRows = mysqli_num_rows($result_check);
+        // Check if email or username already exists
+        $sql_check = "SELECT * FROM `users` WHERE `email` = ?";
+        $stmt_check = $conn->prepare($sql_check);
+        $stmt_check->bind_param("s", $email);
+        $stmt_check->execute();
+        $result_check = $stmt_check->get_result();
 
-      $sql_check_un = "SELECT * FROM `users` WHERE `username` = '$username'";
-      $result_check_un = mysqli_query($conn, $sql_check_un);
-      $numExistRows_un = mysqli_num_rows($result_check_un);
+        $sql_check_un = "SELECT * FROM `users` WHERE `username` = ?";
+        $stmt_check_un = $conn->prepare($sql_check_un);
+        $stmt_check_un->bind_param("s", $username);
+        $stmt_check_un->execute();
+        $result_check_un = $stmt_check_un->get_result();
 
-      if ($numExistRows > 0) {
-        $showerror = "Email already exists.";
-      }elseif($numExistRows_un > 0) {
-        $showerror = "Username already exists.";
-      } elseif ($password != $cpassword) {
-        $showerror = "Passwords do not match.";
-      } else {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO `users` (`email`, `username`, `password`, `dt`) VALUES ('$email', '$username', '$hash', current_timestamp())";
-        $result = mysqli_query($conn, $sql);
-        if ($result) {
-          $showalert = true;
+        if ($result_check->num_rows > 0) {
+            $showerror = "Email already exists.";
+        } elseif ($result_check_un->num_rows > 0) {
+            $showerror = "Username already exists.";
+        } elseif ($password != $cpassword) {
+            $showerror = "Passwords do not match.";
+        } else {
+            // Hash password and generate hashed verification code
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $verification_code = bin2hex(random_bytes(16)); // Random string
+            $hashed_code = password_hash($verification_code, PASSWORD_DEFAULT);
+
+            // Insert user with verification code
+            $sql = "INSERT INTO `users` (`email`, `username`, `password`, `verification_code`, `is_verified`, `dt`) VALUES (?, ?, ?, ?, 0, current_timestamp())";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssss", $email, $username, $hash, $hashed_code);
+            $result = $stmt->execute();
+
+            if ($result) {
+                // Send verification email using PHPMailer
+                $verification_link = "http://localhost/campuslinkss/verify_email.php?email=" . urlencode($email) . "&code=" . urlencode($verification_code);
+
+                // Initialize PHPMailer
+                $mail = new PHPMailer\PHPMailer\PHPMailer();
+                try {
+                    // Server settings
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com'; // SMTP server
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'vijay.talsangi@mitwpu.edu.in'; // Your Gmail address
+                    $mail->Password = 'vjoh xesl sdhm savz'; // Your Gmail app password
+                    $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port = 587; // SMTP port for TLS
+
+                    // Recipients
+                    $mail->setFrom('vijay.talsangi@mitwpu.edu.in', 'Vijay');
+                    $mail->addAddress($email); // Recipient's email
+
+                    // Content
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Verify Your Email Address';
+                    $mail->Body    = "Hello $username,<br><br>
+                                      Please click the link below to verify your email address and complete your registration:<br>
+                                      <a href='$verification_link'>Verify Email</a><br><br>
+                                      If you did not request this, please ignore this email.<br><br>
+                                      Best regards,<br>Your App Team";
+
+                    $mail->send();
+                    $showalert = true;
+                } catch (Exception $e) {
+                    $showerror = "Error sending email: {$mail->ErrorInfo}";
+                }
+            } else {
+                $showerror = "Error in registration. Please try again.";
+            }
         }
-      }
     }
-  }
+}
 ?>
+
 
 <!doctype html>
 <html lang="en">
@@ -53,7 +107,7 @@
   <?php include 'partials/_nav.php';?>
   <?php if($showalert): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-      <strong>Success!</strong> Your account is now created, please login.
+      <strong>Success!</strong> Your account is now created, please verify your account using mail sent to you.
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <?php endif; ?>

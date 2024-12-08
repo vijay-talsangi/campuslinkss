@@ -14,6 +14,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($result->num_rows == 1) {
         $row = $result->fetch_assoc();
+        if (!$row['is_verified']) {
+            echo "<script>alert('Email not verified! Please check your email.'); window.location.href='login.php';</script>";
+            exit;
+        }
         if (password_verify($password, $row['password'])) {
             session_start();
             $_SESSION['loggedin'] = true;
